@@ -1,0 +1,14 @@
+{
+    "name": "mindfulu-chatbot",
+    "version": "1.0.0",
+    "description": "A Progressive Web App chatbot for recommending mental health resources to university students",
+    "main": "index.html",
+    "scripts": {
+        "start": "npx serve .",
+        "dev": "npx serve . --listen 3000",
+        "test": "echo \"No tests specified\" && exit 0"
+    },
+    "keywords": ["pwa", "chatbot", "mental-health", "university"],
+    "author": "",
+    "license": "MIT"
+}
