@@ -1,7 +1,7 @@
 {
-    "name": "MindfulU - Mental Health Chatbot",
-    "short_name": "MindfulU",
-    "description": "A supportive chatbot recommending mental health resources for university students",
+    "name": "ExpenseSnap - Personal Expense Logger",
+    "short_name": "ExpenseSnap",
+    "description": "A lightweight expense logger with charts and monthly summaries",
     "start_url": "/index.html",
     "display": "standalone",
     "background_color": "#ffffff",

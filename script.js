@@ -1,135 +1,155 @@
-// Chatbot logic for MindfulU
-const chatMessages = document.getElementById('chat-messages');
-const userInput = document.getElementById('user-input');
-const sendButton = document.getElementById('send-button');
+﻿
+const amountInput = document.getElementById('amount');
+const categorySelect = document.getElementById('category');
+const dateInput = document.getElementById('date');
+const addButton = document.getElementById('add-expense');
+const budgetInput = document.getElementById('budget-input');
+const setBudgetButton = document.getElementById('set-budget');
+const totalSpentEl = document.getElementById('total-spent');
+const budgetStatusEl = document.getElementById('budget-status');
+const expensesList = document.getElementById('expenses');
+const categoryChartCanvas = document.getElementById('category-chart');
 
-// Resources database
-const resources = {
-    stress: [
-        "The Calm app offers guided meditations specifically for stress relief.",
-        "Try deep breathing exercises: inhale for 4 counts, hold for 4, exhale for 4.",
-        "Your university's counseling center can provide personalized stress management strategies."
-    ],
-    anxiety: [
-        "Headspace has anxiety-focused sessions that are great for students.",
-        "Practice grounding techniques: name 5 things you can see, 4 you can touch, etc.",
-        "Consider talking to a campus counselor about anxiety management."
-    ],
-    depression: [
-        "The Insight Timer app has free meditations for mood improvement.",
-        "Regular exercise and sunlight exposure can help with depressive symptoms.",
-        "Please reach out to mental health professionals - you're not alone in this."
-    ],
-    sleep: [
-        "Establish a consistent sleep schedule, even on weekends.",
-        "Avoid screens 1 hour before bed and try relaxation techniques.",
-        "If sleep issues persist, consult your university health services."
-    ],
-    general: [
-        "Remember, it's okay to ask for help. Your well-being matters.",
-        "Active Minds (activeminds.org) is a great resource for student mental health.",
-        "National Alliance on Mental Illness (NAMI) has excellent support resources."
-    ],
-    crisis: [
-        "If you're in immediate danger, please call emergency services (911) or go to the nearest emergency room.",
-        "For crisis support, call the 988 Suicide & Crisis Lifeline - they're available 24/7.",
-        "Text HOME to 741741 for the Crisis Text Line.",
-        "Please seek immediate professional help - your safety is the top priority."
-    ]
-};
+let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+let budget = parseFloat(localStorage.getItem('budget')) || 2000; // Default budget
 
-// Function to detect crisis keywords
-function detectCrisis(message) {
-    const crisisKeywords = ['suicide', 'kill myself', 'end it all', 'not worth living', 'harm myself', 'die', 'death'];
-    return crisisKeywords.some(keyword => message.toLowerCase().includes(keyword));
+function saveExpenses() {
+    localStorage.setItem('expenses', JSON.stringify(expenses));
 }
 
-// Function to get relevant resources
-function getResources(message) {
-    const lowerMessage = message.toLowerCase();
+function addExpense() {
+    const amount = parseFloat(amountInput.value);
+    const category = categorySelect.value;
+    const date = dateInput.value;
 
-    if (detectCrisis(message)) {
-        return resources.crisis;
+    if (!amount || !category || !date) {
+        alert('Please fill in all fields');
+        return;
     }
 
-    if (lowerMessage.includes('stress') || lowerMessage.includes('overwhelm')) {
-        return resources.stress;
-    }
+    const expense = {
+        id: Date.now(),
+        amount,
+        category,
+        date: new Date(date)
+    };
 
-    if (lowerMessage.includes('anxiety') || lowerMessage.includes('worried') || lowerMessage.includes('panic')) {
-        return resources.anxiety;
-    }
+    expenses.push(expense);
+    saveExpenses();
+    updateUI();
 
-    if (lowerMessage.includes('depress') || lowerMessage.includes('sad') || lowerMessage.includes('down')) {
-        return resources.depression;
-    }
-
-    if (lowerMessage.includes('sleep') || lowerMessage.includes('insomnia')) {
-        return resources.sleep;
-    }
-
-    return resources.general;
+    amountInput.value = '';
+    categorySelect.value = '';
+    dateInput.value = '';
 }
 
-// Function to generate bot response
-function generateResponse(userMessage) {
-    const relevantResources = getResources(userMessage);
+function deleteExpense(id) {
+    expenses = expenses.filter(exp => exp.id !== id);
+    saveExpenses();
+    updateUI();
+}
 
-    let response = "I hear you. ";
-
-    if (detectCrisis(userMessage)) {
-        response += "I'm concerned about what you're sharing. ";
+function setBudget() {
+    const newBudget = parseFloat(budgetInput.value);
+    if (newBudget > 0) {
+        budget = newBudget;
+        localStorage.setItem('budget', budget);
+        budgetInput.value = '';
+        updateUI();
     } else {
-        response += "It's completely normal to feel this way, especially as a university student. ";
+        alert('Please enter a valid budget amount');
+    }
+}
+
+function getCurrentMonthExpenses() {
+    const now = new Date();
+    return expenses.filter(exp => {
+        const expDate = new Date(exp.date);
+        return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear();
+    });
+}
+
+function calculateTotals() {
+    const monthExpenses = getCurrentMonthExpenses();
+    const total = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    return { total, monthExpenses };
+}
+
+function getCategoryBreakdown() {
+    const monthExpenses = getCurrentMonthExpenses();
+    const categories = {};
+
+    monthExpenses.forEach(exp => {
+        categories[exp.category] = (categories[exp.category] || 0) + exp.amount;
+    });
+
+    return categories;
+}
+
+function updateUI() {
+    const { total, monthExpenses } = calculateTotals();
+    totalSpentEl.textContent = `Total Spent: $${total.toFixed(2)} (Budget: $${budget.toFixed(2)})`;
+
+    const budgetStatus = total > budget ? 'Over Budget' : total > budget * 0.8 ? 'Close to Budget' : 'On Track';
+    budgetStatusEl.textContent = `Budget Status: ${budgetStatus}`;
+
+    expensesList.innerHTML = '';
+    monthExpenses.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10).forEach(exp => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span>${exp.category}: $${exp.amount.toFixed(2)} on ${new Date(exp.date).toLocaleDateString()}</span>
+            <button onclick="deleteExpense(${exp.id})">Delete</button>
+        `;
+        expensesList.appendChild(li);
+    });
+
+    updateChart();
+}
+
+function updateChart() {
+    const categories = getCategoryBreakdown();
+    const labels = Object.keys(categories);
+    const data = Object.values(categories);
+
+    if (window.categoryChart) {
+        window.categoryChart.destroy();
     }
 
-    response += "Here are some resources that might help:\n\n";
-    response += relevantResources.join('\n\n');
-    response += "\n\nRemember, I'm here to listen, but for personalized support, please consider reaching out to a mental health professional.";
-
-    return response;
+    window.categoryChart = new Chart(categoryChartCanvas, {
+        type: 'pie',
+        data: {
+            labels,
+            datasets: [{
+                data,
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF',
+                    '#FF9F40',
+                    '#FF6384'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
 }
 
-// Function to add message to chat
-function addMessage(content, sender) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}`;
-    messageDiv.textContent = content;
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+dateInput.value = new Date().toISOString().split('T')[0];
 
-// Function to handle sending message
-function sendMessage() {
-    const message = userInput.value.trim();
-    if (!message) return;
+addButton.addEventListener('click', addExpense);
+setBudgetButton.addEventListener('click', setBudget);
 
-    addMessage(message, 'user');
-    userInput.value = '';
+updateUI();
 
-    // Simulate typing delay
-    sendButton.disabled = true;
-    setTimeout(() => {
-        const botResponse = generateResponse(message);
-        addMessage(botResponse, 'bot');
-        sendButton.disabled = false;
-    }, 1000);
-}
-
-// Event listeners
-sendButton.addEventListener('click', sendMessage);
-userInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        sendMessage();
-    }
-});
-
-// Initial bot message
-setTimeout(() => {
-    addMessage("Hi! I'm MindfulU, your mental health companion. How are you feeling today? I'm here to listen and recommend resources to support your well-being.", 'bot');
-}, 500);
-
-// PWA Service Worker registration
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
@@ -141,3 +161,4 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
+

@@ -10,4 +10,4 @@
 - Use libraries and frameworks only if you have to
 
 ## Prompt
-Create a Progressive Web App that is a chatbot that recommends mental health resources to university students.
+Create a Progressive Web App that is a lightweight expense logger where you quickly jot down spending by category, see simple charts, and get a monthly summary — no account required, all local storage.

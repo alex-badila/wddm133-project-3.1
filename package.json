@@ -1,14 +1,14 @@
 {
-    "name": "mindfulu-chatbot",
+    "name": "expensesnap",
     "version": "1.0.0",
-    "description": "A Progressive Web App chatbot for recommending mental health resources to university students",
+    "description": "A Progressive Web App for logging personal expenses with charts and summaries",
     "main": "index.html",
     "scripts": {
         "start": "npx serve .",
         "dev": "npx serve . --listen 3000",
         "test": "echo \"No tests specified\" && exit 0"
     },
-    "keywords": ["pwa", "chatbot", "mental-health", "university"],
+    "keywords": ["pwa", "expense-tracker", "budget", "charts"],
     "author": "",
     "license": "MIT"
 }

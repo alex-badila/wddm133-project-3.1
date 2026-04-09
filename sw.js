@@ -1,31 +1,42 @@
-// Service Worker for MindfulU PWA
-const CACHE_NAME = 'mindfulu-v1';
+// Service Worker for ExpenseSnap PWA
+const CACHE_NAME = 'expensesnap-v2';
 const urlsToCache = [
-    '/',
     '/index.html',
     '/style.css',
     '/script.js',
-    '/manifest.json'
+    '/manifest.json',
+    'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
 // Install event - cache resources
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => {
-                return cache.addAll(urlsToCache);
-            })
+            .then(cache => cache.addAll(urlsToCache))
+            .then(() => self.skipWaiting())
     );
 });
 
-// Fetch event - serve from cache if available
+// Fetch event - network-first for page navigations, cache-first for assets
 self.addEventListener('fetch', event => {
+    const request = event.request;
+
+    if (request.mode === 'navigate' || request.destination === 'document') {
+        event.respondWith(
+            fetch(request)
+                .then(response => {
+                    const cloned = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(request, cloned));
+                    return response;
+                })
+                .catch(() => caches.match(request).then(response => response))
+        );
+        return;
+    }
+
     event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                // Return cached version or fetch from network
-                return response || fetch(event.request);
-            })
+        caches.match(request)
+            .then(response => response || fetch(request))
     );
 });
 
@@ -40,6 +51,6 @@ self.addEventListener('activate', event => {
                     }
                 })
             );
-        })
+        }).then(() => self.clients.claim())
     );
 });
